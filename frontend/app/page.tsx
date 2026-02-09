@@ -20,7 +20,7 @@ export default function Home() {
     const formData = new FormData();
     formData.append("file", file);
     //https://voice-deepfake-detection-backend.onrender.com
-    //http://localhost:8000/predict
+    //http://localhost:8000/predict 
     try {
       const response = await fetch("http://localhost:8000/predict", {
         method: "POST",

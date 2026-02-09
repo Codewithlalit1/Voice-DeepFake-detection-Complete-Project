@@ -81,7 +81,7 @@ def extract_features(audio_data, sample_rate):
 
 @app.post("/predict")
 async def predict_audio(file: UploadFile = File(...)):
-    temp_filename = f"/tmp/temp_{file.filename}"  # Use /tmp for deployment
+    temp_filename = f"/tmp/temp_{file.filename}"
     
     try:
         # Save uploaded file
@@ -92,7 +92,13 @@ async def predict_audio(file: UploadFile = File(...)):
         audio, sample_rate = librosa.load(temp_filename, res_type='kaiser_fast')
         
         # 1. Generate the Spectrogram Image
+        print("🎨 Generating spectrogram...")
         spectrogram_image = create_spectrogram(audio, sample_rate)
+        
+        if spectrogram_image is None:
+            print("❌ Spectrogram generation failed!")
+        else:
+            print(f"✅ Spectrogram generated: {len(spectrogram_image)} chars")
 
         # 2. Extract Features for AI
         features = extract_features(audio, sample_rate)
@@ -117,11 +123,15 @@ async def predict_audio(file: UploadFile = File(...)):
         return {
             "result": result,
             "confidence": f"{confidence:.2f}%",
-            "spectrogram": spectrogram_image,
+            "spectrogram": spectrogram_image if spectrogram_image else "",  # Send empty string if None
             "dominant_feature_index": int(dominant_index)
         }
 
     except Exception as e:
+        print(f"❌ ERROR: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
         return {"error": str(e)}
