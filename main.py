@@ -67,3 +67,6 @@ if __name__ == "__main__":
         predict_voice(file_path)
     else:
         print("Error: File not found.")
+
+
+#& "C:\Users\ASUS\AppData\Local\Programs\Python\Python312\python.exe" -m uvicorn api:app

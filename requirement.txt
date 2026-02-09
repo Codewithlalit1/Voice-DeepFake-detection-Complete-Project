@@ -3,6 +3,7 @@ librosa
 scikit-learn
 joblib
 soundfile
-
-
-& "C:\Users\ASUS\AppData\Local\Programs\Python\Python312\python.exe" -m uvicorn api:app
+fastapi
+uvicorn
+python-multipart
+matplotlib
