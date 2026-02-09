@@ -8,6 +8,8 @@ import io
 import os
 import shutil
 import base64
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 app = FastAPI()
