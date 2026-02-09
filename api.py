@@ -8,9 +8,22 @@ import io
 import os
 import shutil
 import base64
+
+# ====== MATPLOTLIB CONFIGURATION FOR DEPLOYMENT ======
 import matplotlib
-matplotlib.use('Agg')
+matplotlib.use('Agg')  # Must be before importing pyplot
+
+# Set config directory to tmp (writable on most platforms)
+os.environ['MPLCONFIGDIR'] = '/tmp/matplotlib'
+os.makedirs('/tmp/matplotlib', exist_ok=True)
+
+# Disable font manager warnings and cache
+import logging
+logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+
 import matplotlib.pyplot as plt
+plt.ioff()  # Turn off interactive mode
+# ====================================================
 
 app = FastAPI()
 
@@ -32,25 +45,31 @@ def create_spectrogram(audio_data, sr):
     """
     Generates a visual 'Heatmap' of the audio frequency.
     """
-    plt.figure(figsize=(10, 4))
-    # Convert amplitude to Decibels for visualization
-    D = librosa.amplitude_to_db(np.abs(librosa.stft(audio_data)), ref=np.max)
-    
-    # Draw the image
-    librosa.display.specshow(D, sr=sr, x_axis='time', y_axis='log')
-    plt.colorbar(format='%+2.0f dB')
-    plt.title('Mel-Frequency Spectrogram')
-    plt.tight_layout()
-    
-    # Save to a memory buffer (not a file)
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    buf.seek(0)
-    plt.close()
-    
-    # Encode as Base64 string to send to React
-    image_base64 = base64.b64encode(buf.read()).decode('utf-8')
-    return image_base64
+    try:
+        fig = plt.figure(figsize=(10, 4))
+        
+        # Convert amplitude to Decibels for visualization
+        D = librosa.amplitude_to_db(np.abs(librosa.stft(audio_data)), ref=np.max)
+        
+        # Draw the image
+        librosa.display.specshow(D, sr=sr, x_axis='time', y_axis='log')
+        plt.colorbar(format='%+2.0f dB')
+        plt.title('Mel-Frequency Spectrogram')
+        plt.tight_layout()
+        
+        # Save to a memory buffer (not a file)
+        buf = io.BytesIO()
+        plt.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+        buf.seek(0)
+        plt.close(fig)  # Close the specific figure
+        plt.clf()  # Clear the current figure
+        
+        # Encode as Base64 string to send to React
+        image_base64 = base64.b64encode(buf.read()).decode('utf-8')
+        return image_base64
+    except Exception as e:
+        print(f"Spectrogram generation error: {e}")
+        return None
 
 def extract_features(audio_data, sample_rate):
     try:
@@ -62,11 +81,13 @@ def extract_features(audio_data, sample_rate):
 
 @app.post("/predict")
 async def predict_audio(file: UploadFile = File(...)):
-    temp_filename = f"temp_{file.filename}"
-    with open(temp_filename, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    temp_filename = f"/tmp/temp_{file.filename}"  # Use /tmp for deployment
     
     try:
+        # Save uploaded file
+        with open(temp_filename, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
         # Load Audio
         audio, sample_rate = librosa.load(temp_filename, res_type='kaiser_fast')
         
@@ -76,7 +97,9 @@ async def predict_audio(file: UploadFile = File(...)):
         # 2. Extract Features for AI
         features = extract_features(audio, sample_rate)
         
-        os.remove(temp_filename)
+        # Clean up temp file
+        if os.path.exists(temp_filename):
+            os.remove(temp_filename)
 
         if features is None:
             return {"error": "Could not process audio"}
@@ -94,7 +117,7 @@ async def predict_audio(file: UploadFile = File(...)):
         return {
             "result": result,
             "confidence": f"{confidence:.2f}%",
-            "spectrogram": spectrogram_image,  # <--- Sending the image!
+            "spectrogram": spectrogram_image,
             "dominant_feature_index": int(dominant_index)
         }
 
