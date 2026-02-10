@@ -22,7 +22,8 @@ export default function Home() {
     //https://voice-deepfake-detection-backend.onrender.com
     //http://localhost:8000/predict 
     try {
-      const response = await fetch("https://voice-deepfake-detection-backend.onrender.com/predict", {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const response = await fetch(`${API_URL}/predict`, {
         method: "POST",
         body: formData,
       });

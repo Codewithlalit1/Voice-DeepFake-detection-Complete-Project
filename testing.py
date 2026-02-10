@@ -4,6 +4,8 @@ import requests
 audio_file_path = r"C:\Users\ASUS\Downloads\Priyanshu_voice2.ogg"
 
 url = "https://voice-deepfake-detection-backend.onrender.com/predict"
+#https://voice-deepfake-detection-backend.onrender.com/predict
+#http://localhost:8000/predict
 
 try:
     with open(audio_file_path, 'rb') as f:
