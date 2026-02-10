@@ -22,7 +22,7 @@ export default function Home() {
     //https://voice-deepfake-detection-backend.onrender.com
     //http://localhost:8000/predict 
     try {
-      const response = await fetch("http://localhost:8000/predict", {
+      const response = await fetch("https://voice-deepfake-detection-backend.onrender.com/predict", {
         method: "POST",
         body: formData,
       });
